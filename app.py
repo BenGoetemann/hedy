@@ -337,6 +337,7 @@ def echo_session_vars_main():
                     'proxy_enabled': bool(os.getenv('PROXY_TO_TEST_HOST'))})
 
 
+# FLAG 1 - GET AND PARSE OBJECT FROM CLIENT
 @app.route('/parse', methods=['POST'])
 def parse():
     body = request.json
@@ -368,6 +369,8 @@ def parse():
     username = current_user()['username'] or None
     exception = None
 
+    print(body)
+
     querylog.log_value(level=level, lang=lang,
                        session_id=utils.session_id(), username=username)
 
@@ -380,10 +383,12 @@ def parse():
                     DATABASE.increase_user_run_count(username)
                     ACHIEVEMENTS.increase_count("run")
             except hedy.exceptions.WarningException as ex:
+                # FLAG 2 - CREATING HTML ERROR STRING
                 translated_error = translate_error(ex.error_code, ex.arguments, keyword_lang)
                 if isinstance(ex, hedy.exceptions.InvalidSpaceException):
                     response['Warning'] = translated_error
                 else:
+                    # FLAG 3 - APPEND ERROR TO RESPONSE OBJECT
                     response['Error'] = translated_error
                 response['Location'] = ex.error_location
                 response['FixedCode'] = ex.fixed_code
@@ -442,6 +447,8 @@ def parse():
 
     if "Error" in response and error_check:
         response["message"] = gettext('program_contains_error')
+
+    print("RESPONSE", response)
     return jsonify(response)
 
 
@@ -571,7 +578,7 @@ def hedy_error_to_response(ex):
         "Location": ex.error_location
     }
 
-
+# FLAG 4 - CREATE AND TRANSLATE ERROR MESSAGE
 def translate_error(code, arguments, keyword_lang):
     arguments_that_require_translation = [
         'allowed_types',
@@ -623,9 +630,11 @@ def translate_error(code, arguments, keyword_lang):
     for k, v in arguments.items():
         if k in arguments_that_require_translation:
             if isinstance(v, list):
+                print("IsInstance, " + list)
                 arguments[k] = translate_list(v)
             else:
                 arguments[k] = gettext('' + str(v))
+                print("else, " + gettext('' + str(v)))
 
         if k in arguments_that_require_highlighting:
             if k in arguments_that_require_translation:
